@@ -959,8 +959,8 @@ IrriducibleAbsolutesofSemiringN:=function(W)
 
   return Intersection(AbsolutesOfTheGoodSemigroupN(W),IrreduciblesOfTheGoodSemigroupN(W));
 end;
-IrriducibleAbsolutesofSemiringG:=function(W)
-  local Substitution, ExtendedSmallElements, AbsolutesOfTheGoodSemigroupG,IrreduciblesOfTheGoodSemigroupG,TransformToInfGSN;
+IrreducibleAbsolutesofSemiringG:=function(W)
+  local Substitution, ExtendedSmallElements, AbsolutesOfTheGoodSemigroupG,IrreduciblesOfTheGoodSemigroupG,TransformToInfGSN,W1;
   Set(W);
 
   TransformToInfGSN:=function(v,c)
@@ -1019,47 +1019,17 @@ IrriducibleAbsolutesofSemiringG:=function(W)
     IsAbsoluteOfTheGoodSemigroupN:=function(W,v)
       local ags,i,LessInDeltaN,LessOrEqualInDeltaN,MinimumGSList;
 
-      LessInDeltaN:=function(a,b)
-        if a=infinity and b=infinity then
-          return true;
-        else
-          return a<b;
-        fi;
-      end;
 
-      LessOrEqualInDeltaN:=function(a,b)
-        if a=b then
-          return true;
-        else
-          return LessInDeltaN(a,b);
-        fi;
-      end;
 
-      MinimumGSList:=function(L)
-        local a;
-        a:=L[1];
-        for i in L do
-        a:=MinimumGS(a,i);
-        od;
-        return a;
-      end;
 
-      ags:=[1..Length(v)];
-      for i in [1..Length(v)] do
-        ags[i]:=Filtered(W,j1->j1<>v and LessInDeltaN(v[i],j1[i]) and ForAll(Difference([1..Length(v)],[i]),
-        k1->LessOrEqualInDeltaN(v[k1],j1[k1])));
-      od;
-      if [] in ags then
-        return false;
-      else
-      return MinimumGSList(List(ags,i->MinimumGSList(i)))=v;
-      fi;
+  return First([1..Length(v)],i->First(W,j1->j1<>v and v[i]=j1[i] and ForAll(Difference([1..Length(v)],[i]),
+  k1->v[k1]<=j1[k1]))=fail)<>fail;
     end;
 
   #  W1:=ExtendedSmallElements(W);
   #  cond:=Reversed(W1)[1];
   #  W1:=List(W1,i->TransformToInfGSN(i,cond));
-    return Filtered(W1,i->not IsAbsoluteOfTheGoodSemigroupN(W1,i));
+    return Filtered(W1,i-> IsAbsoluteOfTheGoodSemigroupN(W1,i));
   end;
 
   IrreduciblesOfTheGoodSemigroupG:=function(W1)
@@ -1092,4 +1062,3 @@ IrriducibleAbsolutesofSemiringG:=function(W)
    W1:=List(W1,i->TransformToInfGSN(i,cond));
   return   IrreduciblesOfTheGoodSemigroupG(AbsolutesOfTheGoodSemigroupG(W1));
 end;
-#Esperimento3
