@@ -7,7 +7,10 @@ MinimumGS:=function(v,w)
   return List([1..Length(v)],i->Minimum(v[i],w[i]));
 end;
 
+
+
 #Prova cambiamenti2
+
 
 
 
