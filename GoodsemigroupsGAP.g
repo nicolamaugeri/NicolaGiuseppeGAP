@@ -825,140 +825,7 @@ ConductorOfAGoodSemigroupN:=function(W)
   return Reversed(W)[1];
 end;
 
-IrriducibleAbsolutesofSemiringN:=function(W)
-  local Substitution, ExtendedSmallElements, AbsolutesOfTheGoodSemigroupN,IrreduciblesOfTheGoodSemigroupN,TransformToInfGSN;
-  Set(W);
 
-  TransformToInfGSN:=function(v,c)
-      local a,temp,i;
-      a:=ShallowCopy(v);
-      temp:=Filtered([1..Length(v)],i->v[i]=c[i]);
-      for i in temp do
-        a:=Substitution(a,i,infinity);
-      od;
-      return a;
-  end;
-
-  Substitution:=function(v,i,new)
-    local a;
-    a:=ShallowCopy(v);
-    a[i]:=new;
-    return a;
-  end;
-
-  ExtendedSmallElements:=function(W)
-    local cond,S,i,j,k,inter;
-
-    inter:=function(v,w)
-      local ags,i,j,temp;
-      if Length(v)=1 then
-        ags:=[];
-        for i in [v[1]..w[1]] do
-          ags:=Union(ags,[[i]]);
-        od;   else ags:=[];
-          temp:=inter(v{[1..Length(v)-1]},w{[1..Length(v)-1]});
-        for i in temp do
-          for j in [v[Length(v)]..w[Length(v)]] do
-            ags:=Union(ags,[Concatenation(i,[j])]);
-          od;
-        od;
-      fi;
-      return ags;
-    end;
-
-    cond:=Reversed(W)[1];
-    S:=ShallowCopy(W);
-    for k in [1..Length(cond)] do
-      for i in Filtered(S,j->j[k]=cond[k]) do
-        for j in [cond[k]+1..cond[k]+S[1][k]] do
-          S:=Concatenation(S,[Substitution(i,k,j)]);
-        od;
-      od;
-    od;
-    #uno:=List([1..Length(cond)],i->1);
-    return  Union(S,inter(Reversed(W)[1],Reversed(W)[1]+W[1]));
-  end;
-
-  AbsolutesOfTheGoodSemigroupN:=function(W)
-    local W1,cond,IsAbsoluteOfTheGoodSemigroupN;
-
-    IsAbsoluteOfTheGoodSemigroupN:=function(W,v)
-      local ags,i,LessInDeltaN,LessOrEqualInDeltaN,MinimumGSList;
-
-      LessInDeltaN:=function(a,b)
-        if a=infinity and b=infinity then
-          return true;
-        else
-          return a<b;
-        fi;
-      end;
-
-      LessOrEqualInDeltaN:=function(a,b)
-        if a=b then
-          return true;
-        else
-          return LessInDeltaN(a,b);
-        fi;
-      end;
-
-      MinimumGSList:=function(L)
-        local a;
-        a:=L[1];
-        for i in L do
-        a:=MinimumGS(a,i);
-        od;
-        return a;
-      end;
-
-      ags:=[1..Length(v)];
-      for i in [1..Length(v)] do
-        ags[i]:=Filtered(W,j1->j1<>v and LessInDeltaN(v[i],j1[i]) and ForAll(Difference([1..Length(v)],[i]),
-        k1->LessOrEqualInDeltaN(v[k1],j1[k1])));
-      od;
-      if [] in ags then
-        return false;
-      else
-      return MinimumGSList(List(ags,i->MinimumGSList(i)))=v;
-      fi;
-    end;
-
-    W1:=ExtendedSmallElements(W);
-    cond:=Reversed(W1)[1];
-    W1:=List(W1,i->TransformToInfGSN(i,cond));
-    return List(Filtered(W1,i->not IsAbsoluteOfTheGoodSemigroupN(W1,i)),i2->TransformToInfGSN(i2,cond));
-  end;
-
-  IrreduciblesOfTheGoodSemigroupN:=function(W)
-    local W1,ags,i1,temp,cond,DifferenceGS;
-
-    DifferenceGS:=function(v,w)
-      local ags,i;
-      ags:=[];
-      for i in [1..Length(v)] do
-        if v[i]=infinity and w[i]=infinity then
-        ags:=Concatenation(ags,[infinity]);
-        else
-        ags:=Concatenation(ags,[v[i]-w[i]]);
-        fi;
-      od;
-      return ags;
-    end;
-
-    W1:=ExtendedSmallElements(W);
-    cond:=Reversed(W1)[1];
-    W1:=List(W1,i->TransformToInfGSN(i,cond));
-    ags:=[];
-    for i1 in [1..Length(W1)] do
-      temp:=W1[i1];
-      if First([1..i1-1],j->DifferenceGS(temp,W1[j]) in W1)=fail then
-        ags:=Concatenation(ags,[temp]);
-      fi;
-    od;
-    return ags;
-  end;
-
-  return Intersection(AbsolutesOfTheGoodSemigroupN(W),IrreduciblesOfTheGoodSemigroupN(W));
-end;
 IrreducibleAbsolutesofSemiringG:=function(W)
   local Substitution, ExtendedSmallElements, AbsolutesOfTheGoodSemigroupG,IrreduciblesOfTheGoodSemigroupG,TransformToInfGSN,W1;
   Set(W);
@@ -1022,13 +889,13 @@ IrreducibleAbsolutesofSemiringG:=function(W)
 
 
 
-  return First([1..Length(v)],i->First(W,j1->j1<>v and v[i]=j1[i] and ForAll(Difference([1..Length(v)],[i]),
-  k1->v[k1]<=j1[k1]))=fail)<>fail;
+    return First([1..Length(v)],i->First(W,j1->j1<>v and v[i]=j1[i] and ForAll(Difference([1..Length(v)],[i]),
+    k1->v[k1]<=j1[k1]))=fail)<>fail;
     end;
 
-  #  W1:=ExtendedSmallElements(W);
-  #  cond:=Reversed(W1)[1];
-  #  W1:=List(W1,i->TransformToInfGSN(i,cond));
+    #  W1:=ExtendedSmallElements(W);
+    #  cond:=Reversed(W1)[1];
+    #  W1:=List(W1,i->TransformToInfGSN(i,cond));
     return Filtered(W1,i-> IsAbsoluteOfTheGoodSemigroupN(W1,i));
   end;
 
@@ -1058,7 +925,7 @@ IrreducibleAbsolutesofSemiringG:=function(W)
     return ags;
   end;
   W1:=ExtendedSmallElements(W);
-   cond:=ConductorOfAGoodSemigroupN(W1);
-   W1:=List(W1,i->TransformToInfGSN(i,cond));
+  cond:=ConductorOfAGoodSemigroupN(W1);
+  W1:=List(W1,i->TransformToInfGSN(i,cond));
   return   IrreduciblesOfTheGoodSemigroupG(AbsolutesOfTheGoodSemigroupG(W1));
 end;
