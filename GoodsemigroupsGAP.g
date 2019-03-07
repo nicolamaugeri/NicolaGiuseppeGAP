@@ -9,7 +9,7 @@ end;
 
 
 
-#Prova cambiamenti2
+
 
 
 
@@ -1092,4 +1092,4 @@ IrriducibleAbsolutesofSemiringG:=function(W)
    W1:=List(W1,i->TransformToInfGSN(i,cond));
   return   IrreduciblesOfTheGoodSemigroupG(AbsolutesOfTheGoodSemigroupG(W1));
 end;
-#Esperimento
+
