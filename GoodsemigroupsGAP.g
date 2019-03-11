@@ -9,9 +9,6 @@ end;
 
 
 
-#Prova cambiamenti2
-
-
 
 
 #####################################################
@@ -34,7 +31,7 @@ end;
 ##########################################################
 
 IsContainedGS:=function(S1,S2)
-  local i;
+  local i,Small1,Small2;
   #We order the elements of the good semigroups putting the conductor as last small element.
   Small1:=SmallElementsOfGoodSemigroup(S1);
   Small2:=SmallElementsOfGoodSemigroup(S2);
@@ -703,13 +700,13 @@ ComputeMHS:=function(S)
 
   #An algorithm that, given the list of all tracks T, of a good semigroup, compute all MHS
   HittingSetsFromTrack:=function(T)
-    local m,D,i,j,k;
+    local m,D,i,j,k,ConcatenationWithoutRepetitions;
 
     #A function similar to concatenation but without repetition, we don't use "union" because it is faster
-    ConcatenationWithouRepetitions:=function(L)
-      local i,ags,ConcatenationOfTwoListsWithouRepetitions;
+    ConcatenationWithoutRepetitions:=function(L)
+      local i,ags,ConcatenationOfTwoListsWithoutRepetitions;
 
-      ConcatenationOfTwoListsWithouRepetitions:=function(S,T)
+      ConcatenationOfTwoListsWithoutRepetitions:=function(S,T)
         local U,i;
         U:=ShallowCopy(S);
         for i in T do
@@ -722,7 +719,7 @@ ComputeMHS:=function(S)
 
       ags:=[];
       for i in [1..Length(L)] do
-        ags:=ConcatenationOfTwoListsWithouRepetitions(ags,L[i]);
+        ags:=ConcatenationOfTwoListsWithoutRepetitions(ags,L[i]);
       od;
       return ags;
     end;
@@ -736,7 +733,7 @@ ComputeMHS:=function(S)
         if Intersection(j,T[i-1])<>[] then
           Append(D[i],[j]);
         else
-        Append(D[i],ConcatenationWithouRepetitions(List(Filtered(T[i-1],k1->Filtered(D[i-1],i1->i1<>j and
+        Append(D[i],ConcatenationWithoutRepetitions(List(Filtered(T[i-1],k1->Filtered(D[i-1],i1->i1<>j and
         IsSubset(Concatenation(j,[k1]),i1))=[]),k->[Concatenation(j,[k])])));
         fi;
       od;
@@ -749,13 +746,352 @@ ComputeMHS:=function(S)
   return List(HittingSetsFromTrack(AllTrackInt(S,I)),i->I{i});
 end;
 
+ComputebEdimOfAGoodSemigroup:=function(S)
+  local MHS;
+  MHS:=ComputeMHS(S);
+  SortBy(MHS,i->Length(i));
+  return Length(MHS[1]);
+end;
+
 ComputeEdimOfAGoodSemigroup:=function(S)
-  local ComputeMHS;
+  local MHS,stop,L,bedim,n,I,h,vr,H1;
+  MHS:=ComputeMHS(S);
+  bedim:=ComputebEdimOfAGoodSemigroup(S);
+  I:=IrriducibleAbsolutesofSemiring(S);
+  n:=bedim;
+  H:=Filtered(MHS,i->Length(i)=n);
+  while n<>Length(I) do
+
+    vr:=VerifyReducibility(S,H);
+    if vr<>fail then
+      return [n,vr];
+    fi;
+
+    else
+      
+      for h in H do
+        if(IsThereAMGSContainedInAndContaining(S,h)=false) then 
+        return h;
+        fi;
+      od;
+
+    n:=n+1;
+
+    #Update H
+    H1:=[];
+    for h in H do
+      for j in Difference(I,h)
+        H1:=Concatenation(H1,Concatenation(h,j))
+      od;
+    od;
+    H:=Union(H1,Filtered(MHS,i->Length(i)=n));
+
+  od;
+end;
+
+
+#Verify Reducibility deve ritornare fail o un sor
+testalista3:=function(S,L)
+  local I;
+  I:=IrriducibleAbsolutesofSemiring(S);
+  return  Filtered(L,i->not VerifyConditionOfReducibility(S,i,I));
+end;
+
+#It checks if a set H satisfy the condition of reducibility (I_A(S)\subseteq red(H))
+VerifyConditionOfReducibility:=function(S,H,I)
+  local ClosureRespectReducibility;
+
+  #It computes Red(H) (old Scartabili7)
+  ClosureRespectReducibility:=function(S,H,I)
+    local H1,temp;
+    #We search the first irriducible absolute that is reducible by H
+    temp:=First(I,i-> check4(H,i,S,I)); 
+    if temp<> fail then
+      H1:=Union(H,[temp]); 
+    else
+      H1:=H; 
+    fi;
+    #We consider the "closure" of H respect the reducibility
+    while H<>H1 do
+      H:=H1;
+      temp:=First(I,i-> check4(H,i,S,I)); 
+
+      if temp<> fail then 
+        H1:=Union(H,[temp]); 
+      else
+        H1:=H; 
+      fi; 
+    od;
+    return H1 ;
+  end;
+
+  return IsSubset(ClosureRespectReducibility(S,H,I),I);
 end;
 
 
 
+condi23:=function(S,H)
+  local condi;
 
+  condi:=function(S,v)
+  local cond,condu,k,maximal,maximal2,maxi;
+  maximal:=function(S,v,k)
+   local U,T,w,i;
+   U:=List([1..2],j->Filtered([1..Length(S)],i->S[i][j]<>infinity));
+     T:=List([1..2],j->List(U[j],i->S[i][j]));
+   return maxi(List(List(FactorizationsIntegerWRTList(v,T[k]),j->Sum(List([1..Length(j)],i->j[i]*S[U[k][i]]))),l1->l1[3-k]));;
+  end;
+   maximal2:=function(S,v,k)
+    local U,T,w,i;
+   U:=List([1..2],j->Filtered([1..Length(S)],i->S[i][j]<>infinity));
+     T:=List([1..2],j->List(U[j],i->S[i][j]));
+   return maxi(List(Filtered(List(FactorizationsIntegerWRTList(v,T[k]),j->Sum(List([1..Length(j)],i->j[i]*S[U[k][i]]))),l-> not infinity in l),l1->l1[3-k]));
+   end;
+   maxi:=function(l)
+   if l=[] then return 0;
+   else return Maximum(l); fi;
+   end;
+  condu:=StructuralCopy(S[Length(S)]);
+  if not infinity in v then return List([1..2],k->maxi(Filtered(List(Filtered(S,i->i<>v and i[k]=v[k]),j->j[3-k]),j1->Filtered(S,j2->j2[3-k]=j1 and j2[k]>v[k])<>[]))); else
+    k:=First([1..2],i->v[i]=infinity);
+  cond:=StructuralCopy(S[Length(S)]);
+  #cond[k]:=Maximum(Filtered(List(Filtered(S,i->i[3-k]=Minimum(v[3-k],condu[3k])),j->j[k]),k1->k1<cond[k]));
+  cond[3-k]:=v[3-k];
+  while MinimumGS(cond,condu) in S do
+    cond[k]:=cond[k]-1;
+  od;
+    return cond[k]+1; fi;
+  end;
+  return List(H,j->condi(S,j));
+end;
+
+maxi:=function(l)
+     if l=[] then return 0;
+     else return Maximum(l); fi;
+end;
+
+massimo2:=function(S,v,cond)
+        local U,T,w,i;
+        U:=List([1..2],j->Filtered([1..Length(S)],i->S[i][j]<>infinity));
+          T:=List([1..2],j->List(U[j],i->S[i][j]));
+          w:=List(v,i->0);
+          if infinity in v then
+            k:=Filtered([1..2],i->v[i]<>infinity)[1];
+
+          #a:=Filtered(List(List(List(Filtered(List(FactorizationsIntegerWRTList(v[k],T[k]),j->Sum(List([1..Length(j)],i->j[i]*S[U[k][i]]))),l-> not infinity in l),l1->l1[3-k]),l2->List(FactorizationsIntegerWRTList(l2,T[3-k]),j->Sum(List([1..Length(j)],i->j[i]*S[U[3-k][i]])))),l3->Maximum(List(l3,l4->l4[k]))),l5->l5>v[k]) <>[];
+          w[k]:=maxi(List(Filtered(List(FactorizationsIntegerWRTList(v[k],T[k]),j->Sum(List([1..Length(j)],i->j[i]*S[U[k][i]]))),l-> not infinity in l),l1->l1[3-k]));
+
+       else
+        # a:= Union(List([1..2],k->Filtered(Union(List(Filtered(List(FactorizationsIntegerWRTList(v[k],T[k]),j->Sum(List([1..Length(j)],i->j[i]*S[U[k][i]]))),l1->l1[3-k]<v[3-k]),l2->List(FactorizationsIntegerWRTList(l2[3-k],T[3-k]),j->Sum(List([1..Length(j)],i->j[i]*S[U[3-k][i]]))))),l3->l3[k]>v[k])))<>[];
+
+        w:=List([1..2],k->maxi(List(Filtered(List(FactorizationsIntegerWRTList(v[k],T[k]),j->Sum(List([1..Length(j)],i->j[i]*S[U[k][i]]))),l1->l1[3-k]<v[3-k]),l5->l5[3-k])));
+         fi;
+
+         return w;
+end;
+
+Controllare4:=function(v,W,S,I)
+  local a,k,cond,m,a3;
+
+  cond:=condi23(W,I);
+  m:=massimo2(S,v,cond);
+
+  if not infinity  in  v then
+  a:=List([1..2],i->[]);
+  a3:=Filtered([1..2],k->m[k]<>0);
+  for k in a3 do
+  a[k]:=Filtered([m[k]+1..v[3-k]-1],i->Filtered(W,j->j[3-k]=i and j[k]=v[k])<>[]);
+  od; else
+  k:=Filtered([1..2],i->v[i]<>infinity)[1];
+  if m[k]=0 then a:=[]; else
+  a:=Filtered([m[k]+1..cond[IndPos(I,v)]-1],i->Filtered(W,j-> j[3-k]=i and j[k]=Minimum(W[Length(W)][k],v[k]))<>[]); fi;
+  fi;
+  return a;
+end;
+
+check4:=function(S,v,W,H)
+  local U,T,cond,m,k,i,a,a3,i1,j1,min,a4,a5,b,i3,temp;
+  #If the element stays in H (it is reducible by definition, it returns "false")
+  if v in S then 
+    return false; 
+  else
+    #If H contains only infinities the function returns "false"
+    if ForAll(S,i->infinity in i) then 
+      return false; 
+
+    else
+    #U is a list of two elements. In the i-th elements there is the list of the positions of the elements which have the i-th
+    #coordinate differents from infinity. In T the position are substituted with the corrispective elements.
+    # Example: H:=[[ 14, 7 ], [ 19, 6 ], [ 22, infinity ]];
+    # U:=List([1..2],j->Filtered([1..Length(H)],i->H[i][j]<>infinity)); [ [ 1, 2, 3 ], [ 1, 2 ] ];
+
+    U:=List([1..2],j->Filtered([1..Length(S)],i->S[i][j]<>infinity));
+    T:=List([1..2],j->List(U[j],i->S[i][j]));
+
+    cond:=condi23(W,H);
+    m:=massimo2(S,v,cond);
+
+    #Finite Case
+    if not infinity in v then
+    a4:=List([1..2],k->Filtered(List(FactorizationsIntegerWRTList(m[k],T[3-k]),
+    j->Sum(List([1..Length(j)],i->j[i]*S[U[3-k][i]]))),l3->l3[k]>=v[k]));
+
+  a3:=Filtered([1..2],k->v[k] in List(a4[k],j->j[k]) and Length(Set(a4[k]))>1);
+  a:=List([1..2],i-> i in a3);
+  if a3=[] then return false; else
+  b:=Controllare4(v,W,S,H);
+  a5:=Set(List(a3,i->[Length(b[i]),i])); a5:=Concatenation(a5,[[1,2]]);
+  i1:=1; while a[a5[i1][2]] and i1<=Length(a3) do a4:=b[a5[i1][2]]; i3:=1;
+    while a[a5[i1][2]] and i3<=Length(a4)  do    a[a5[i1][2]]:=a[a5[i1][2]] and Filtered(List(FactorizationsIntegerWRTList(a4[i3],T[3-a5[i1][2]]),j->Sum(List([1..Length(j)],i->j[i]*S[U[3-a5[i1][2]][i]  ]))),l3->l3[a5[i1][2]]>v[a5[i1][2]])<>[]; i3:=i3+1;
+  od; i1:=i1+1; od;
+  fi;
+  #else a[k]:=[]; fi; od;
+  a:=Filtered(a,i->i)<>[];
+  else
+    k:=Filtered([1..2],i->v[i]<>infinity)[1];
+
+  a3:=Filtered(List(FactorizationsIntegerWRTList(m[k],T[3-k]),j->Sum(List([1..Length(j)],i->j[i]*S[U[3-k][i]]))),l3->l3[k]>=v[k]);
+  a:=v[k] in List(a3,j->j[k]) and Length(Set(a3))>1;
+  if not a then return a; else j1:=1; a3:=Controllare4(v,W,S,H); while a and j1<=Length(a3) do
+  a:=a and Filtered(List(FactorizationsIntegerWRTList(a3[j1],T[3-k]),j->Sum(List([1..Length(j)],i->j[i]*S[U[3-k][i]]))),l3->l3[k]>v[k])<>[]; j1:=j1+1;
+  od;
+
+  min:=Minimum(List(S,i->i[3-k]));
+  temp:=Maximum(cond[IndPos(H,v)],massimo2(S,v,cond)[k]);
+  #temp:=massimo2(H,v,cond)[k];
+  i1:=temp; while a and i1<=temp+min-1 do
+  a:=a and Filtered(List(FactorizationsIntegerWRTList(i1,T[3-k]),j->Sum(List([1..Length(j)],i->j[i]*S[U[3-k][i]]))),l3->l3[k]>v[k])<>[];
+  i1:=i1+1; od;
+
+  fi;
+  fi;
+  return a; fi; fi;
+end;
+
+
+Scartabili112:=function(W,S,cond,Abso,I)
+  local H1,H,k,k1;
+
+  H:=StructuralCopy(S);
+  #We check if the condition I_A(S)\subseteq H is satisfied.
+   if IsSubset(S,I) then 
+    return S; 
+   
+   else
+    k:=1; 
+    k1:=Riducibilita23(W,H,Abso[k],cond,Abso); 
+    while k<Length(Abso) and k1=[] do 
+      k:=k+1; 
+      k1:=Riducibilita23(W,H,Abso[k],cond,Abso); 
+    od; 
+    if k1<> []  then 
+      H1:=Union(H,k1); 
+    else
+      H1:=H; 
+    fi;
+    while H<>H1 and not IsSubset(H1,I) do
+      H:=H1;   
+      k:=1; 
+      k1:=Riducibilita23(W,H,Abso[k],cond,Abso); 
+      
+      while k<Length(Abso) and k1=[] do 
+        k:=k+1; k1:=Riducibilita23(W,H,Abso[k],cond,Abso); 
+      od; 
+      if k1<> []  then H1:=Union(H,k1); else
+      H1:=H; fi; od;
+
+    return H1 ; fi;
+end;
+
+
+Riducibilita12:=function(W,S,v)
+  local ind,temp,temp21,temp22,temp23,temp3;
+
+  if infinity in v then
+    temp3:=[0,0];
+    ind:=First([1,2],i->v[i]<>infinity);
+    temp3[3-ind]:=0;
+    temp:=Filtered(S,i->IsInt(i[ind]) and i[ind]<=v[ind]);
+  #   temp2:=List(List(Fattorizzazione(v[ind],List(temp,i->i[ind])),j->Sum(List([1..Length(j)],k->j[k]*temp[k]))),k1->k1[3-ind]);
+  temp21:=List(Fattorizzazione(v[ind],List(temp,i->i[ind])),j->List([1..Length(j)],k->j[k]*temp[k])); if temp21=[] then temp3[ind]:=0; return temp3; else
+  temp22:=List(List(temp21,j->Sum(FloatF(j))),k1->k1[3-ind]); if infinity in temp22 then temp3[ind]:=infinity; return temp3; else
+  temp23:=List(List(temp21,j->Sum(j)),k1->k1[3-ind]); if Intero(Maximum(temp23))>Maximum(temp22) then
+
+    temp3[ind]:=Maximum(temp23); else temp3[ind]:=Maximum(temp22); fi; fi; return temp3; fi; else
+    temp3:=[0,0];
+    for ind in [1,2] do
+      temp:=Filtered(S,i->IsInt(i[ind]) and i[ind]<=v[ind]);
+      temp21:=List(Fattorizzazione(v[ind],List(temp,i->i[ind])),j->List([1..Length(j)],k->j[k]*temp[k])); if temp21=[] then temp3[ind]:=0; return temp3; else
+      temp22:=List(List(temp21,j->Sum(FloatF(j))),k1->k1[3-ind]); if infinity in temp22 then temp3[ind]:=infinity; else
+      temp23:=List(List(temp21,j->Sum(j)),k1->k1[3-ind]); if Intero(Maximum(temp23))>Maximum(temp22) then
+
+        temp3[ind]:=Maximum(temp23); else temp3[ind]:=Maximum(temp22); fi; fi;  fi;od; return temp3; fi;
+end;
+
+IndPos:=function(l,v)
+  return First([1..Length(l)],i->l[i]=v);
+end;
+
+Riducibilita23:=function(W,S,v,cond,Abso)
+  local W1,a,Substitution,v1,temp,temp2,temp3,ind,i1,k;
+
+  Substitution:=function(v,i,new)
+    local a;
+    a:=ShallowCopy(v);
+    a[i]:=new;
+    return a;
+  end;
+
+  massimoIrr:=function(W,v,temp,ind,cond,Abso)
+    if not infinity in v then
+    return cond[IndPos(Abso,v)][ind];
+    
+    else
+    return Maximum(temp[ind],cond[IndPos(Abso,v)][ind])+W[1][3-ind]-1; 
+    fi;
+  end;
+
+  if v in S then 
+    return []; 
+  
+  else
+    W1:=Esteso(W);
+    temp:= Riducibilita(W,S,v); 
+    if v=Reversed(temp) then 
+      return [v]; 
+    else
+      if temp=[0,0] then 
+        return [];
+      else
+        temp2:=Filtered([1,2],j->temp[j]<>0 and temp[j]<>infinity);
+        a:=[]; 
+        i1:=1; 
+        
+        while  i1<=Length(temp2) do
+          ind:=temp2[i1];
+          temp3:=Filtered([temp[ind]..massimoIrr(W,v,temp,ind,cond,Abso)],k->MinimumGS(Substitution(v,3-ind,k),Reversed(W1)[1]) in W1);
+          k:=1; 
+          temp4:=Riducibilita12(W,S,Substitution(v,3-ind,temp3[k]))[3-ind]>v[ind];
+          
+            while temp4 and k<Length(temp3) do 
+              k:=k+1;temp4:=Riducibilita12(W,S,Substitution(v,3-ind,temp3[k]))[3-ind]>v[ind];
+            od;
+          
+          if temp4  
+          then AddSet(a,v);
+          else 
+            if k<>1 and not Substitution(v,3-ind,temp3[k-1]) in S  then
+              AddSet(a,Substitution(v,3-ind,temp3[k-1]));
+            fi; 
+          fi; 
+          
+          i1:=i1+1;
+        od;
+        return a; 
+      fi;
+    fi; 
+  fi;
+end;
 
 
 ###################################################################################################################################
@@ -764,8 +1100,8 @@ end;
 ###
 ###################################################################################################################################
 
- #   ThirdP:=function(A) internal function that, given a subset of N^2, finds the couple of vectors where the third property of the good semigroups is not satisfied
-  ThirdP:=function(A)
+#ThirdP:=function(A) internal function that, given a subset of N^2, finds the couple of vectors where the third property of the good semigroups is not satisfied
+ThirdP:=function(A)
     local B,car,C,conductor,D,ind,ind2,F,k,i,screm;
       screm:=function(v)
       local a1,a2,i,k;
@@ -776,7 +1112,7 @@ end;
         if i<>k[2] then a1[i]:=Minimum(a1[i],a2[i]); a2[i]:=Minimum(a1[i],a2[i]); fi; od;
       return [[a1,a2],k[2]];
       end;
-  end;
+end;
 
 
 
@@ -812,6 +1148,13 @@ RandomGoodSemigroup:=function(m,cond)
 end;
 
 
+
+
+
+
+
+
+
 ###################################################################################################################################
 ###
 ### MORE BRANCHES
@@ -827,7 +1170,7 @@ end;
 
 
 IrreducibleAbsolutesofSemiringG:=function(W)
-  local Substitution, ExtendedSmallElements, AbsolutesOfTheGoodSemigroupG,IrreduciblesOfTheGoodSemigroupG,TransformToInfGSN,W1;
+  local Substitution, ExtendedSmallElements, AbsolutesOfTheGoodSemigroupG,IrreduciblesOfTheGoodSemigroupG,TransformToInfGSN,W1,cond;
   Set(W);
 
   TransformToInfGSN:=function(v,c)
